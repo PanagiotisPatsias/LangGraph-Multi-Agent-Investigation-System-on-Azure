@@ -58,7 +58,7 @@ def _route_from_supervisor(state: GraphState) -> str:
     """Route to the next agent based on supervisor's decision."""
     next_agent = state.get("next_agent", "FINISH")
     iteration = state.get("iteration_count", 0)
-    max_iter = state.get("max_iterations", 15)
+    max_iter = state.get("max_iterations", 15 )
 
     # Safety: prevent infinite loops
     if iteration >= max_iter:
