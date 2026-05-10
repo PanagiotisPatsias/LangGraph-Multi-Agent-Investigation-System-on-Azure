@@ -8,6 +8,11 @@ import httpx
 from langchain_core.tools import tool
 
 from src.config.settings import get_settings
+from src.tools._mock_data import (
+    format_investigation_news,
+    format_investigation_web,
+    mock_enabled,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +28,10 @@ def web_search(query: str, count: int = 5) -> str:
         query: The search query.
         count: Number of results to return (max 10).
     """
+    if mock_enabled():
+        logger.info("[MOCK] web_search query=%r", query)
+        return format_investigation_web()
+
     settings = get_settings()
     if not settings.bing_search_api_key:
         return "Web search is not configured (missing Bing API key)."
@@ -72,6 +81,10 @@ def web_search_news(query: str, count: int = 5) -> str:
         query: The news search query.
         count: Number of results to return (max 10).
     """
+    if mock_enabled():
+        logger.info("[MOCK] web_search_news query=%r", query)
+        return format_investigation_news()
+
     settings = get_settings()
     if not settings.bing_search_api_key:
         return "News search is not configured (missing Bing API key)."
@@ -81,7 +94,6 @@ def web_search_news(query: str, count: int = 5) -> str:
     headers = {"Ocp-Apim-Subscription-Key": settings.bing_search_api_key}
     params = {"q": query, "count": str(count), "textFormat": "Raw"}
 
-    # Use the news endpoint
     news_endpoint = settings.bing_search_endpoint.replace("/search", "/news/search")
 
     try:

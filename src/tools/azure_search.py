@@ -23,6 +23,7 @@ from langchain_core.tools import tool
 
 from src.config.llm_factory import create_embeddings
 from src.config.settings import get_settings
+from src.tools._mock_data import format_investigation_docs, mock_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,6 @@ class AzureSearchManager:
         ]
 
 
-# Singleton for tool usage
 _search_manager: AzureSearchManager | None = None
 
 
@@ -139,6 +139,10 @@ def search_documents(query: str, investigation_id: str) -> str:
         query: The search query describing what information to find.
         investigation_id: The ID of the investigation to search within.
     """
+    if mock_enabled():
+        logger.info("[MOCK] search_documents query=%r", query)
+        return format_investigation_docs()
+
     manager = _get_search_manager()
     results = manager.hybrid_search(query, investigation_id)
 
