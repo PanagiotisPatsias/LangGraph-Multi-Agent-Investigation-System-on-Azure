@@ -50,21 +50,15 @@ def report_generator_node(state: GraphState) -> dict[str, Any]:
 
     llm = create_report_generator()
 
-    # Compile all findings
     all_findings = []
-
     for finding in state.get("document_findings", []):
         all_findings.append(f"### Document Analysis\n{finding['content']}")
-
     for finding in state.get("financial_findings", []):
         all_findings.append(f"### Financial Analysis\n{finding['content']}")
-
     for finding in state.get("web_findings", []):
         all_findings.append(f"### Web Research\n{finding['content']}")
 
     findings_text = "\n\n".join(all_findings) if all_findings else "No findings available."
-
-    # Agent sequence for methodology section
     agent_sequence = state.get("agent_sequence", [])
 
     messages = [
@@ -85,8 +79,6 @@ def report_generator_node(state: GraphState) -> dict[str, Any]:
 
     response = llm.invoke(messages)
     report = response.content if hasattr(response, "content") else str(response)
-
-    # Extract sections for structured storage
     sections = _extract_sections(report)
 
     return {

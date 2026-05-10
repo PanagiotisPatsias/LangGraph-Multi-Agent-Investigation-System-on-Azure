@@ -41,12 +41,11 @@ from src.agents.financial_analyst import financial_analyst_node
 from src.agents.report_generator import report_generator_node
 from src.agents.supervisor import supervisor_node
 from src.agents.web_researcher import web_researcher_node
-from src.config.settings import get_settings
+from src.config.settings import get_langfuse_callback, get_settings
 from src.graph.state import GraphState
 
 logger = logging.getLogger(__name__)
 
-# Agent node names
 SUPERVISOR = "supervisor"
 DOCUMENT_ANALYST = "document_analyst"
 FINANCIAL_ANALYST = "financial_analyst"
@@ -58,9 +57,9 @@ def _route_from_supervisor(state: GraphState) -> str:
     """Route to the next agent based on supervisor's decision."""
     next_agent = state.get("next_agent", "FINISH")
     iteration = state.get("iteration_count", 0)
-    max_iter = state.get("max_iterations", 15 )
+    max_iter = state.get("max_iterations", 15)
 
-    # Safety: prevent infinite loops
+    # iteration ceiling guards against runaway loops; force a report if missing.
     if iteration >= max_iter:
         logger.warning("Max iterations reached — forcing report generation")
         if state.get("final_report"):
@@ -92,17 +91,14 @@ def build_investigation_graph() -> StateGraph:
     """
     graph = StateGraph(GraphState)
 
-    # Add nodes
     graph.add_node(SUPERVISOR, supervisor_node)
     graph.add_node(DOCUMENT_ANALYST, document_analyst_node)
     graph.add_node(FINANCIAL_ANALYST, financial_analyst_node)
     graph.add_node(WEB_RESEARCHER, web_researcher_node)
     graph.add_node(REPORT_GENERATOR, report_generator_node)
 
-    # Entry point
     graph.set_entry_point(SUPERVISOR)
 
-    # Conditional routing from supervisor
     graph.add_conditional_edges(
         SUPERVISOR,
         _route_from_supervisor,
@@ -115,7 +111,6 @@ def build_investigation_graph() -> StateGraph:
         },
     )
 
-    # All specialist agents route back to supervisor
     for agent in [DOCUMENT_ANALYST, FINANCIAL_ANALYST, WEB_RESEARCHER, REPORT_GENERATOR]:
         graph.add_edge(agent, SUPERVISOR)
 
@@ -165,8 +160,16 @@ async def run_investigation(
         query[:100],
     )
 
-    # Execute the graph
-    final_state = await graph.ainvoke(initial_state)
+    config: dict[str, Any] = {}
+    langfuse_handler = get_langfuse_callback()
+    if langfuse_handler is not None:
+        config["callbacks"] = [langfuse_handler]
+        config["metadata"] = {
+            "langfuse_session_id": initial_state["investigation_id"],
+            "langfuse_tags": ["investigation", "langgraph"],
+        }
+
+    final_state = await graph.ainvoke(initial_state, config=config)
 
     logger.info(
         "Investigation %s completed. Agents used: %s",

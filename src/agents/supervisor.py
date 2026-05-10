@@ -71,7 +71,6 @@ def supervisor_node(state: GraphState) -> dict[str, Any]:
     llm = create_supervisor()
     structured_llm = llm.with_structured_output(SupervisorDecision)
 
-    # Build context summary
     agent_history = state.get("agent_sequence", [])
     doc_count = len(state.get("document_findings", []))
     fin_count = len(state.get("financial_findings", []))

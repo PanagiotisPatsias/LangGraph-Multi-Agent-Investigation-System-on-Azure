@@ -56,7 +56,6 @@ def web_researcher_node(state: GraphState) -> dict[str, Any]:
         ),
     ]
 
-    # Agentic loop
     max_steps = 6
     for step in range(max_steps):
         response = llm_with_tools.invoke(messages)

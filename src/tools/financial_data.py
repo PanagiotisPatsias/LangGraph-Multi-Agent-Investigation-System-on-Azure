@@ -106,7 +106,7 @@ def compute_risk_metrics(
 
     sharpe = excess_return / volatility if volatility > 0 else 0.0
 
-    # Maximum drawdown
+    # maximum drawdown
     cumulative = [1.0]
     for r in returns:
         cumulative.append(cumulative[-1] * (1 + r))
@@ -117,7 +117,7 @@ def compute_risk_metrics(
         drawdown = (peak - val) / peak
         max_drawdown = max(max_drawdown, drawdown)
 
-    # Value at Risk (historical, 95%)
+    # value at risk (historical, 95%)
     sorted_returns = sorted(returns)
     var_index = max(0, int(len(sorted_returns) * 0.05))
     var_95 = sorted_returns[var_index]

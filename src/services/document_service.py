@@ -34,20 +34,12 @@ class DocumentService:
         self, investigation_id: str, filename: str, content: bytes, content_type: str
     ) -> list[dict[str, Any]]:
         """Process a document: upload, chunk, embed, return indexed chunks."""
-        # Upload to blob
         blob_path = self._blob.upload_document(investigation_id, filename, content, content_type)
-
-        # Extract text (supports plain text and basic PDF)
         text = self._extract_text(content, content_type)
-
-        # Chunk
         chunks = self._splitter.split_text(text)
         logger.info("Split document %s into %d chunks", filename, len(chunks))
-
-        # Embed
         embeddings = self._embeddings.embed_documents(chunks)
 
-        # Build index-ready documents
         indexed_chunks = []
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
             chunk_id = hashlib.sha256(f"{blob_path}:{i}".encode()).hexdigest()[:16]
@@ -74,7 +66,7 @@ class DocumentService:
         if content_type == "application/pdf":
             return _extract_pdf_text(content)
 
-        # Fallback: try decoding as text
+        # unknown content-type: best-effort utf-8 decode rather than failing.
         return content.decode("utf-8", errors="replace")
 
 

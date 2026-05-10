@@ -15,10 +15,15 @@ def create_llm(temperature: float = 0.1, max_tokens: int | None = None) -> Azure
         "api_key": settings.azure_openai_api_key,
         "api_version": settings.azure_openai_api_version,
         "azure_deployment": settings.azure_openai_deployment,
-        "temperature": temperature,
     }
-    if max_tokens:
-        kwargs["max_tokens"] = max_tokens
+    # gpt-5 / o-series only accept default temperature and reserve completion
+    # tokens for internal reasoning; let them use their own defaults.
+    deploy = settings.azure_openai_deployment.lower()
+    is_reasoning = any(p in deploy for p in ("gpt-5", "o1", "o3", "o4"))
+    if not is_reasoning:
+        kwargs["temperature"] = temperature
+        if max_tokens:
+            kwargs["max_tokens"] = max_tokens
     return AzureChatOpenAI(**kwargs)
 
 

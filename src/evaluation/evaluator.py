@@ -69,10 +69,7 @@ class ReportEvaluator:
         findings: dict[str, list[dict[str, Any]]],
     ) -> EvaluationResult:
         """Run all evaluation checks on a report."""
-        # Check completeness (rule-based)
         completeness = self._check_completeness(report)
-
-        # LLM-based evaluation
         llm_scores = self._llm_evaluate(report, findings)
 
         overall = (
@@ -112,7 +109,6 @@ class ReportEvaluator:
         self, report: str, findings: dict[str, list[dict[str, Any]]]
     ) -> dict[str, Any]:
         """Use LLM-as-judge to evaluate report quality."""
-        # Compile source findings for comparison
         source_text_parts = []
         for source, finding_list in findings.items():
             for f in finding_list:

@@ -57,7 +57,6 @@ def document_analyst_node(state: GraphState) -> dict[str, Any]:
         ),
     ]
 
-    # Agentic loop: let the LLM call tools iteratively
     max_steps = 5
     for step in range(max_steps):
         response = llm_with_tools.invoke(messages)
@@ -66,11 +65,9 @@ def document_analyst_node(state: GraphState) -> dict[str, Any]:
         if not response.tool_calls:
             break
 
-        # Execute tool calls
         for tool_call in response.tool_calls:
             if tool_call["name"] == "search_documents":
                 args = tool_call["args"]
-                # Inject investigation_id if not provided
                 if "investigation_id" not in args:
                     args["investigation_id"] = state["investigation_id"]
                 result = search_documents.invoke(args)
@@ -80,8 +77,23 @@ def document_analyst_node(state: GraphState) -> dict[str, Any]:
                     ToolMessage(content=result, tool_call_id=tool_call["id"])
                 )
 
-    # Extract the final analysis
-    analysis = response.content if hasattr(response, "content") else str(response)
+    analysis = response.content if hasattr(response, "content") else ""
+    # reasoning-model fallback: gpt-5/o-series can exhaust the completion budget
+    # on internal reasoning during the tool loop, leaving response.content empty.
+    # force a no-tools synthesis pass so downstream agents have something to use.
+    if not analysis.strip():
+        synthesis = llm.invoke(
+            messages
+            + [
+                HumanMessage(
+                    content=(
+                        "Based on the document search results above, write your final analysis. "
+                        "Cite the source document and chunk for each finding."
+                    )
+                )
+            ]
+        )
+        analysis = synthesis.content if hasattr(synthesis, "content") else str(synthesis)
 
     findings = [
         {

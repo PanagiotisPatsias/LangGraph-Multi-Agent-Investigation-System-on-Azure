@@ -54,7 +54,6 @@ async def create_investigation(request: InvestigationRequest) -> InvestigationRe
         logger.error("Investigation %s failed: %s", inv_id, e)
         raise HTTPException(status_code=500, detail=f"Investigation failed: {e}")
 
-    # Persist to Cosmos DB
     try:
         cosmos = CosmosService()
         cosmos.save_investigation(inv_id, {
@@ -107,13 +106,11 @@ async def upload_document(investigation_id: str, file: UploadFile) -> dict[str, 
     content = await file.read()
     content_type = file.content_type or "application/octet-stream"
 
-    # Process document: chunk, embed
     doc_service = DocumentService()
     chunks = doc_service.process_document(
         investigation_id, file.filename, content, content_type
     )
 
-    # Index chunks in Azure AI Search
     search_manager = AzureSearchManager()
     search_manager.ensure_index()
     search_manager.index_chunks(chunks)

@@ -56,7 +56,6 @@ def financial_analyst_node(state: GraphState) -> dict[str, Any]:
         ),
     ]
 
-    # Include any document findings as context
     if state.get("document_findings"):
         doc_context = "\n".join(
             f"- {f['content'][:500]}" for f in state["document_findings"]
@@ -67,7 +66,6 @@ def financial_analyst_node(state: GraphState) -> dict[str, Any]:
             )
         )
 
-    # Agentic loop
     max_steps = 5
     for step in range(max_steps):
         response = llm_with_tools.invoke(messages)
